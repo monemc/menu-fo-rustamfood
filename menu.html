@@ -1,0 +1,564 @@
+import React, { useState, useEffect } from 'react';
+import { Menu, Plus, Edit2, Trash2, Save, X, Search, ChefHat, UtensilsCrossed, LogIn, LogOut } from 'lucide-react';
+
+const RestaurantApp = () => {
+  const [view, setView] = useState('menu'); // 'menu', 'admin', 'login'
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [categories, setCategories] = useState([
+    { id: 1, name: 'Salatlar', icon: '🥗' },
+    { id: 2, name: 'Issiq taomlar', icon: '🍲' },
+    { id: 3, name: 'Kaboblar', icon: '🍖' },
+    { id: 4, name: 'Ichimliklar', icon: '🥤' },
+    { id: 5, name: 'Desertlar', icon: '🍰' }
+  ]);
+  
+  const [menuItems, setMenuItems] = useState([
+    { id: 1, categoryId: 1, name: "Achichuk", description: "Yangi pomidor va piyoz salati", price: 15000, image: "🥗", available: true },
+    { id: 2, categoryId: 1, name: "Olivye", description: "Klassik rus salati", price: 20000, image: "🥗", available: true },
+    { id: 3, categoryId: 2, name: "Lag'mon", description: "An'anaviy o'zbek lag'mon", price: 35000, image: "🍜", available: true },
+    { id: 4, categoryId: 2, name: "Osh", description: "O'zbek milliy taomi", price: 25000, image: "🍛", available: true },
+    { id: 5, categoryId: 3, name: "Lula kabob", description: "Qiyma go'shtdan kabob", price: 40000, image: "🍖", available: true },
+    { id: 6, categoryId: 3, name: "Jigar kabob", description: "Mol jigari kabob", price: 35000, image: "🍖", available: true },
+    { id: 7, categoryId: 4, name: "Kompot", description: "Uyda tayyorlangan kompot", price: 8000, image: "🥤", available: true },
+    { id: 8, categoryId: 4, name: "Choy", description: "Ko'k yoki qora choy", price: 5000, image: "☕", available: true },
+    { id: 9, categoryId: 5, name: "Tort", description: "Napoleon torti", price: 25000, image: "🍰", available: true }
+  ]);
+
+  const [selectedCategory, setSelectedCategory] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [editingItem, setEditingItem] = useState(null);
+  const [isAddingNew, setIsAddingNew] = useState(false);
+  const [loginForm, setLoginForm] = useState({ username: '', password: '' });
+
+  const [newItem, setNewItem] = useState({
+    name: '',
+    description: '',
+    price: '',
+    image: '🍽️',
+    categoryId: 1,
+    available: true
+  });
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    if (loginForm.username === 'admin' && loginForm.password === 'admin123') {
+      setIsAuthenticated(true);
+      setView('admin');
+      setLoginForm({ username: '', password: '' });
+    } else {
+      alert('Login yoki parol noto\'g\'ri!');
+    }
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setView('menu');
+  };
+
+  const filteredItems = menuItems.filter(item => {
+    const matchesCategory = item.categoryId === selectedCategory;
+    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         item.description.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
+
+  const handleAddItem = () => {
+    if (!newItem.name || !newItem.price) {
+      alert('Iltimos, taom nomi va narxini kiriting!');
+      return;
+    }
+    
+    const item = {
+      id: Date.now(),
+      ...newItem,
+      price: parseInt(newItem.price)
+    };
+    
+    setMenuItems([...menuItems, item]);
+    setNewItem({
+      name: '',
+      description: '',
+      price: '',
+      image: '🍽️',
+      categoryId: selectedCategory,
+      available: true
+    });
+    setIsAddingNew(false);
+  };
+
+  const handleUpdateItem = () => {
+    setMenuItems(menuItems.map(item => 
+      item.id === editingItem.id ? editingItem : item
+    ));
+    setEditingItem(null);
+  };
+
+  const handleDeleteItem = (id) => {
+    if (window.confirm('Rostdan ham o\'chirmoqchimisiz?')) {
+      setMenuItems(menuItems.filter(item => item.id !== id));
+    }
+  };
+
+  const toggleAvailability = (id) => {
+    setMenuItems(menuItems.map(item =>
+      item.id === id ? { ...item, available: !item.available } : item
+    ));
+  };
+
+  const formatPrice = (price) => {
+    return new Intl.NumberFormat('uz-UZ').format(price) + " so'm";
+  };
+
+  // Login View
+  if (view === 'login') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-amber-900 flex items-center justify-center p-4">
+        <div className="bg-slate-800 border-2 border-amber-500 rounded-lg p-8 max-w-md w-full shadow-2xl">
+          <div className="text-center mb-8">
+            <ChefHat className="w-16 h-16 text-amber-400 mx-auto mb-4" />
+            <h2 className="text-3xl font-bold text-amber-400">Admin Panel</h2>
+            <p className="text-slate-300 mt-2">Tizimga kirish</p>
+          </div>
+          
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="block text-slate-300 mb-2">Login</label>
+              <input
+                type="text"
+                value={loginForm.username}
+                onChange={(e) => setLoginForm({...loginForm, username: e.target.value})}
+                className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded text-white focus:outline-none focus:border-amber-500"
+                placeholder="admin"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-slate-300 mb-2">Parol</label>
+              <input
+                type="password"
+                value={loginForm.password}
+                onChange={(e) => setLoginForm({...loginForm, password: e.target.value})}
+                className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded text-white focus:outline-none focus:border-amber-500"
+                placeholder="••••••"
+              />
+            </div>
+            
+            <button
+              type="submit"
+              className="w-full bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold py-3 rounded transition-colors"
+            >
+              Kirish
+            </button>
+            
+            <button
+              type="button"
+              onClick={() => setView('menu')}
+              className="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded transition-colors"
+            >
+              Orqaga
+            </button>
+          </form>
+          
+          <div className="mt-6 text-center text-slate-400 text-sm">
+            <p>Demo: admin / admin123</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Menu View (Customer)
+  if (view === 'menu') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-amber-900">
+        {/* Header */}
+        <header className="bg-slate-800 border-b-4 border-amber-500 sticky top-0 z-10 shadow-lg">
+          <div className="max-w-7xl mx-auto px-4 py-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <UtensilsCrossed className="w-10 h-10 text-amber-400" />
+                <div>
+                  <h1 className="text-3xl font-bold text-amber-400">Restoran Menyu</h1>
+                  <p className="text-slate-300 text-sm">O'zbekiston taomlar</p>
+                </div>
+              </div>
+              
+              <button
+                onClick={() => setView('login')}
+                className="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-900 rounded font-semibold transition-colors"
+              >
+                <LogIn className="w-5 h-5" />
+                Admin
+              </button>
+            </div>
+            
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Taom qidirish..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-amber-500"
+              />
+            </div>
+          </div>
+        </header>
+
+        {/* Categories */}
+        <div className="bg-slate-800 border-b-2 border-slate-700 sticky top-32 z-10">
+          <div className="max-w-7xl mx-auto px-4 py-4 overflow-x-auto">
+            <div className="flex gap-2">
+              {categories.map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => setSelectedCategory(cat.id)}
+                  className={`px-6 py-3 rounded-lg font-semibold whitespace-nowrap transition-all ${
+                    selectedCategory === cat.id
+                      ? 'bg-amber-500 text-slate-900 shadow-lg scale-105'
+                      : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                  }`}
+                >
+                  <span className="mr-2">{cat.icon}</span>
+                  {cat.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Menu Items */}
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredItems.map(item => (
+              <div
+                key={item.id}
+                className={`bg-slate-800 border-2 rounded-lg overflow-hidden shadow-lg transition-all hover:scale-105 ${
+                  item.available ? 'border-amber-500' : 'border-slate-600 opacity-60'
+                }`}
+              >
+                <div className="bg-gradient-to-br from-amber-500 to-amber-600 p-8 flex items-center justify-center">
+                  <span className="text-6xl">{item.image}</span>
+                </div>
+                
+                <div className="p-6">
+                  <div className="flex items-start justify-between mb-2">
+                    <h3 className="text-xl font-bold text-amber-400">{item.name}</h3>
+                    {!item.available && (
+                      <span className="text-xs bg-red-500 text-white px-2 py-1 rounded">
+                        Tugadi
+                      </span>
+                    )}
+                  </div>
+                  
+                  <p className="text-slate-300 text-sm mb-4">{item.description}</p>
+                  
+                  <div className="flex items-center justify-between">
+                    <span className="text-2xl font-bold text-amber-400">
+                      {formatPrice(item.price)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          {filteredItems.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-slate-400 text-lg">Hech narsa topilmadi</p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Admin View
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-amber-900">
+      {/* Admin Header */}
+      <header className="bg-slate-800 border-b-4 border-amber-500 sticky top-0 z-10 shadow-lg">
+        <div className="max-w-7xl mx-auto px-4 py-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <ChefHat className="w-10 h-10 text-amber-400" />
+              <div>
+                <h1 className="text-3xl font-bold text-amber-400">Admin Panel</h1>
+                <p className="text-slate-300 text-sm">Menyu boshqaruvi</p>
+              </div>
+            </div>
+            
+            <div className="flex gap-2">
+              <button
+                onClick={() => setView('menu')}
+                className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded font-semibold transition-colors"
+              >
+                Menyuni ko'rish
+              </button>
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded font-semibold transition-colors"
+              >
+                <LogOut className="w-5 h-5" />
+                Chiqish
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Categories */}
+      <div className="bg-slate-800 border-b-2 border-slate-700 sticky top-24 z-10">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex gap-2 overflow-x-auto">
+            {categories.map(cat => (
+              <button
+                key={cat.id}
+                onClick={() => {
+                  setSelectedCategory(cat.id);
+                  setIsAddingNew(false);
+                  setEditingItem(null);
+                }}
+                className={`px-6 py-3 rounded-lg font-semibold whitespace-nowrap transition-all ${
+                  selectedCategory === cat.id
+                    ? 'bg-amber-500 text-slate-900 shadow-lg'
+                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                }`}
+              >
+                <span className="mr-2">{cat.icon}</span>
+                {cat.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Add New Button */}
+        {!isAddingNew && !editingItem && (
+          <button
+            onClick={() => setIsAddingNew(true)}
+            className="mb-6 flex items-center gap-2 px-6 py-3 bg-amber-500 hover:bg-amber-600 text-slate-900 rounded-lg font-bold transition-colors"
+          >
+            <Plus className="w-5 h-5" />
+            Yangi taom qo'shish
+          </button>
+        )}
+
+        {/* Add New Form */}
+        {isAddingNew && (
+          <div className="mb-6 bg-slate-800 border-2 border-amber-500 rounded-lg p-6">
+            <h3 className="text-xl font-bold text-amber-400 mb-4">Yangi taom qo'shish</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-slate-300 mb-2">Taom nomi *</label>
+                <input
+                  type="text"
+                  value={newItem.name}
+                  onChange={(e) => setNewItem({...newItem, name: e.target.value})}
+                  className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded text-white focus:outline-none focus:border-amber-500"
+                  placeholder="Masalan: Lag'mon"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-slate-300 mb-2">Narxi (so'm) *</label>
+                <input
+                  type="number"
+                  value={newItem.price}
+                  onChange={(e) => setNewItem({...newItem, price: e.target.value})}
+                  className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded text-white focus:outline-none focus:border-amber-500"
+                  placeholder="35000"
+                />
+              </div>
+              
+              <div className="md:col-span-2">
+                <label className="block text-slate-300 mb-2">Ta'rif</label>
+                <textarea
+                  value={newItem.description}
+                  onChange={(e) => setNewItem({...newItem, description: e.target.value})}
+                  className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded text-white focus:outline-none focus:border-amber-500"
+                  rows="3"
+                  placeholder="Qisqacha ta'rif..."
+                />
+              </div>
+              
+              <div>
+                <label className="block text-slate-300 mb-2">Emoji/Rasm</label>
+                <input
+                  type="text"
+                  value={newItem.image}
+                  onChange={(e) => setNewItem({...newItem, image: e.target.value})}
+                  className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded text-white focus:outline-none focus:border-amber-500"
+                  placeholder="🍜"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-slate-300 mb-2">Kategoriya</label>
+                <select
+                  value={newItem.categoryId}
+                  onChange={(e) => setNewItem({...newItem, categoryId: parseInt(e.target.value)})}
+                  className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded text-white focus:outline-none focus:border-amber-500"
+                >
+                  {categories.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.icon} {cat.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            
+            <div className="flex gap-2 mt-4">
+              <button
+                onClick={handleAddItem}
+                className="flex items-center gap-2 px-6 py-2 bg-green-500 hover:bg-green-600 text-white rounded font-semibold transition-colors"
+              >
+                <Save className="w-5 h-5" />
+                Saqlash
+              </button>
+              <button
+                onClick={() => setIsAddingNew(false)}
+                className="flex items-center gap-2 px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded font-semibold transition-colors"
+              >
+                <X className="w-5 h-5" />
+                Bekor qilish
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Form */}
+        {editingItem && (
+          <div className="mb-6 bg-slate-800 border-2 border-amber-500 rounded-lg p-6">
+            <h3 className="text-xl font-bold text-amber-400 mb-4">Taomni tahrirlash</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-slate-300 mb-2">Taom nomi</label>
+                <input
+                  type="text"
+                  value={editingItem.name}
+                  onChange={(e) => setEditingItem({...editingItem, name: e.target.value})}
+                  className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded text-white focus:outline-none focus:border-amber-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-slate-300 mb-2">Narxi (so'm)</label>
+                <input
+                  type="number"
+                  value={editingItem.price}
+                  onChange={(e) => setEditingItem({...editingItem, price: parseInt(e.target.value)})}
+                  className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded text-white focus:outline-none focus:border-amber-500"
+                />
+              </div>
+              
+              <div className="md:col-span-2">
+                <label className="block text-slate-300 mb-2">Ta'rif</label>
+                <textarea
+                  value={editingItem.description}
+                  onChange={(e) => setEditingItem({...editingItem, description: e.target.value})}
+                  className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded text-white focus:outline-none focus:border-amber-500"
+                  rows="3"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-slate-300 mb-2">Emoji/Rasm</label>
+                <input
+                  type="text"
+                  value={editingItem.image}
+                  onChange={(e) => setEditingItem({...editingItem, image: e.target.value})}
+                  className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded text-white focus:outline-none focus:border-amber-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-slate-300 mb-2">Kategoriya</label>
+                <select
+                  value={editingItem.categoryId}
+                  onChange={(e) => setEditingItem({...editingItem, categoryId: parseInt(e.target.value)})}
+                  className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded text-white focus:outline-none focus:border-amber-500"
+                >
+                  {categories.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.icon} {cat.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            
+            <div className="flex gap-2 mt-4">
+              <button
+                onClick={handleUpdateItem}
+                className="flex items-center gap-2 px-6 py-2 bg-green-500 hover:bg-green-600 text-white rounded font-semibold transition-colors"
+              >
+                <Save className="w-5 h-5" />
+                O'zgarishlarni saqlash
+              </button>
+              <button
+                onClick={() => setEditingItem(null)}
+                className="flex items-center gap-2 px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded font-semibold transition-colors"
+              >
+                <X className="w-5 h-5" />
+                Bekor qilish
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Menu Items List */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {menuItems.filter(item => item.categoryId === selectedCategory).map(item => (
+            <div
+              key={item.id}
+              className={`bg-slate-800 border-2 rounded-lg overflow-hidden shadow-lg ${
+                item.available ? 'border-amber-500' : 'border-slate-600'
+              }`}
+            >
+              <div className="bg-gradient-to-br from-amber-500 to-amber-600 p-6 flex items-center justify-center">
+                <span className="text-5xl">{item.image}</span>
+              </div>
+              
+              <div className="p-4">
+                <h3 className="text-lg font-bold text-amber-400 mb-2">{item.name}</h3>
+                <p className="text-slate-300 text-sm mb-3">{item.description}</p>
+                <p className="text-xl font-bold text-amber-400 mb-4">{formatPrice(item.price)}</p>
+                
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => toggleAvailability(item.id)}
+                    className={`flex-1 px-3 py-2 rounded font-semibold transition-colors ${
+                      item.available
+                        ? 'bg-green-500 hover:bg-green-600 text-white'
+                        : 'bg-red-500 hover:bg-red-600 text-white'
+                    }`}
+                  >
+                    {item.available ? 'Mavjud' : 'Tugagan'}
+                  </button>
+                  
+                  <button
+                    onClick={() => setEditingItem(item)}
+                    className="px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors"
+                  >
+                    <Edit2 className="w-5 h-5" />
+                  </button>
+                  
+                  <button
+                    onClick={() => handleDeleteItem(item.id)}
+                    className="px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded transition-colors"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default RestaurantApp;
